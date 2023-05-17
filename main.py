@@ -55,8 +55,7 @@ sync_module: BlinkSyncModule
 for sync_module in blink.sync.values():
     sync_id = sync_module.sync_id
     network_id = sync_module.network_id
-    vids_dir = f'vids/{sync_id}'
-    os.makedirs(vids_dir, exist_ok=True)
+    print(f'\nChecking network: {sync_module.network_info.get("network").get("name")}')
 
     manifest = fetch_manifest(sync_id, network_id)
     if manifest is None:
@@ -72,6 +71,8 @@ for sync_module in blink.sync.values():
     clips.reverse()
     print('DONE')
 
+    vids_dir = f'vids/{sync_id}'
+    os.makedirs(vids_dir, exist_ok=True)
     last_timestamp = 0
     try:
         with open(f'{vids_dir}/last-timestamp') as f:
@@ -79,11 +80,13 @@ for sync_module in blink.sync.values():
     except OSError:
         pass
 
+    new_clips = 0
     for clip in clips:
         created_at = dateutil.parser.parse(clip.get('created_at'))
         if int(created_at.timestamp()) <= last_timestamp:
             continue
 
+        new_clips += 1
         last_timestamp = int(created_at.timestamp())
         clip_id = clip.get('id')
         clip_request = api.request_local_storage_clip(blink, network_id, sync_id, manifest_id, clip_id)
@@ -108,3 +111,5 @@ for sync_module in blink.sync.values():
         with open(f'{vids_dir}/last-timestamp', 'w') as f:
             f.write(str(last_timestamp))
         print(' DONE')
+
+    print(f'Saved {new_clips} clips.')
